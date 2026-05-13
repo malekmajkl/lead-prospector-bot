@@ -1,11 +1,11 @@
+from __future__ import annotations
+
+import logging
 import os
 import sys
-import logging
 from datetime import date
 from pathlib import Path
 
-
-# ── Logging ───────────────────────────────────────────────────────────────────
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -20,12 +20,15 @@ log = logging.getLogger(__name__)
 
 def load_env() -> None:
     env_path = Path(__file__).parent.parent / ".env"
-    if env_path.exists():
-        for line in env_path.read_text(encoding="utf-8").splitlines():
+    if not env_path.exists():
+        return
+    with env_path.open() as f:
+        for line in f:
             line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                k, v = line.split("=", 1)
-                os.environ.setdefault(k.strip(), v.strip())
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            os.environ.setdefault(key.strip(), val.strip())
 
 
 load_env()

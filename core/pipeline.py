@@ -15,7 +15,6 @@ from core.telegram import tg_send, tg_typing
 
 log = logging.getLogger(__name__)
 
-# ── Research system prompt ─────────────────────────────────────────────────────
 RESEARCH_SYSTEM = """Jsi expert na výzkum kontaktů pro municipální sektor v České republice.
 Najdi požadované kontakty pomocí web_search na oficiálních stránkách obcí.
 
@@ -33,7 +32,6 @@ Každý objekt musí mít přesně tato pole (null pokud nenajdeš):
 }
 Nikdy nevymýšlej kontaktní údaje. Preferuj osobní email před obecným."""
 
-# ── Scoring tables ─────────────────────────────────────────────────────────────
 ROLE_PTS: dict[str, int] = {
     "starosta": 30, "starostka": 30, "primátor": 30,
     "místostarosta": 25, "ředitel": 25, "ředitelka": 25,
@@ -50,8 +48,6 @@ MEDIUM: set[str] = {
 }
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
-
 def score_lead(lead: dict) -> tuple[int, str]:
     role_l = (lead.get("role") or "").lower()
     rpts = next((v for k, v in ROLE_PTS.items() if k in role_l), 5)
@@ -66,14 +62,13 @@ def score_lead(lead: dict) -> tuple[int, str]:
     if (lead.get("contact_name") or "").strip().count(" ") >= 1:
         dpts += 5
 
-    muni = (lead.get("municipality") or "").lower().strip()
-    spts = 25 if muni in LARGE else 20 if muni in MEDIUM else 10
-
-    src = (lead.get("source_url") or "").lower()
+    muni  = (lead.get("municipality") or "").lower().strip()
+    spts  = 25 if muni in LARGE else 20 if muni in MEDIUM else 10
+    src   = (lead.get("source_url") or "").lower()
     srcpts = 15 if (".cz" in src or ".eu" in src) else (7 if src else 2)
 
     total = rpts + dpts + spts + srcpts
-    tier = (
+    tier  = (
         "🔴 High Priority" if total >= 75 else
         "🟡 Medium Priority" if total >= 50 else
         "🟢 Low Priority" if total >= 25 else
@@ -146,8 +141,6 @@ def research_leads(role: str, region: str, count: int,
         return result[:count]
     return []
 
-
-# ── Pipeline orchestrator ──────────────────────────────────────────────────────
 
 def run_pipeline(chat_id: str, role: str, region: str, count: int) -> None:
     MAX_ROUNDS   = 5
