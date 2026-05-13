@@ -307,7 +307,7 @@ def research_leads(role, region, count, exclude_municipalities=None):
     for attempt in range(3):
         try:
             response = client.messages.create(
-                model="claude-sonnet-4-5",
+                model="claude-sonnet-4-6",
                 max_tokens=2000,
                 system=RESEARCH_SYSTEM,
                 tools=[{"type": "web_search_20250305", "name": "web_search"}],
