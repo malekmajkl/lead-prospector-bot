@@ -16,9 +16,7 @@ fi
 mkdir -p logs output
 
 echo "📦 Instaluji závislosti..."
-pip3 install anthropic requests gspread google-auth \
-  google-api-python-client google-auth-httplib2 \
-  google-auth-oauthlib openpyxl -q
+pip3 install -r requirements.txt -q
 
 echo ""
 echo "🤖 Spouštím CEO Assistant Bot..."
