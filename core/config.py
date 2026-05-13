@@ -5,6 +5,7 @@ from datetime import date
 from pathlib import Path
 
 
+# ── Logging ───────────────────────────────────────────────────────────────────
 os.makedirs("logs", exist_ok=True)
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
