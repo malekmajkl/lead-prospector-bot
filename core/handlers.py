@@ -12,7 +12,8 @@ from googleapiclient.discovery import build
 
 from core.config import CHAT_ID, CREDS, GMAIL_TOK, SHEETS_ID, SHEETS_TAB, TODAY
 from core.pipeline import run_pipeline
-from core.sheets import find_lead, update_lead_status_in_sheets
+from core.gmail_client import save_gmail_drafts
+from core.sheets import find_lead, get_leads_for_redraft, update_lead_status_in_sheets
 from core.telegram import tg_send
 
 log = logging.getLogger(__name__)
@@ -50,7 +51,8 @@ WELCOME = """
 → `/sent holešov`  nebo  `/replied kubáník`
 
 *Synchronizace:*
-`/sync` — Gmail ↔ Sheets auto-sync (Sent + Replied)
+`/sync`    — Gmail ↔ Sheets auto-sync (Sent + Replied)
+`/redraft` — vytvoř Gmail drafty pro leady bez draftu
 
 *Přehled:*
 `/status` — statistiky z databáze
@@ -290,6 +292,25 @@ def handle_sync(chat_id: str) -> None:
         tg_send(chat_id, f"❌ Chyba při synchronizaci:\n`{str(e)}`")
 
 
+def handle_redraft(chat_id: str) -> None:
+    tg_send(chat_id, "📬 *Redraft* — hledám leady bez draftu...\n⏳ Chvíli strpení...")
+    leads = get_leads_for_redraft()
+    if not leads:
+        tg_send(
+            chat_id,
+            "📭 *Žádné leady k redraftování*\n\n"
+            "_Všechny nové leady s emailem již mají draft, nebo žádné nenalezeny._",
+        )
+        return
+    tg_send(chat_id, f"📋 Nalezeno *{len(leads)}* leadů. Tvořím Gmail drafty...")
+    count = save_gmail_drafts(leads)
+    tg_send(
+        chat_id,
+        f"✅ *{count}/{len(leads)}* Gmail draftů vytvořeno.\n\n"
+        + (f"⚠️ {len(leads) - count} selhalo — zkontrolujte Gmail token." if count < len(leads) else ""),
+    )
+
+
 def dispatch(message: dict) -> None:
     chat_id = str(message["chat"]["id"])
     text    = message.get("text", "").strip()
@@ -313,6 +334,8 @@ def dispatch(message: dict) -> None:
         handle_leady(chat_id)
     elif text.startswith("/sync"):
         handle_sync(chat_id)
+    elif text.startswith("/redraft"):
+        handle_redraft(chat_id)
     elif any(text.startswith(f"/{cmd}") for cmd in STATUS_LABELS):
         parts = text.split(None, 1)
         cmd   = parts[0].lstrip("/").lower()
