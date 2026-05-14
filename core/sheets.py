@@ -113,7 +113,8 @@ def get_leads_for_redraft() -> list[dict]:
     if not _sheets_available():
         return []
     try:
-        ws   = _get_worksheet()
+        ws = _get_worksheet()
+        _ensure_draft_created_header(ws)  # guarantees header exists before get_all_records
         rows = ws.get_all_records()
         leads = []
         for row in rows:
@@ -137,17 +138,29 @@ def get_leads_for_redraft() -> list[dict]:
         return []
 
 
+def _ensure_draft_created_header(ws) -> int:
+    """Return col index (1-based) of 'Draft Created', adding the header if missing."""
+    header = ws.row_values(1)
+    if "Draft Created" in header:
+        return header.index("Draft Created") + 1
+    col = len(header) + 1
+    ws.update_cell(1, col, "Draft Created")
+    log.info(f"Added 'Draft Created' header at col {col}")
+    return col
+
+
 def mark_drafts_created(emails: list[str]) -> None:
-    """Set 'Draft Created' = 'Yes' (col 15) for each successfully drafted email."""
+    """Set 'Draft Created' = 'Yes' for each successfully drafted email."""
     if not _sheets_available() or not emails:
         return
     try:
         ws        = _get_worksheet()
+        col       = _ensure_draft_created_header(ws)
         rows      = ws.get_all_records()
         email_set = {e.lower() for e in emails}
         for i, row in enumerate(rows, start=2):
             if (row.get("Email") or "").lower() in email_set:
-                ws.update_cell(i, 15, "Yes")
+                ws.update_cell(i, col, "Yes")
         log.info(f"Marked {len(emails)} leads as Draft Created")
     except Exception as e:
         log.error(f"mark_drafts_created error: {e}")
