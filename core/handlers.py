@@ -13,7 +13,7 @@ from googleapiclient.discovery import build
 from core.config import CHAT_ID, CREDS, GMAIL_TOK, SHEETS_ID, SHEETS_TAB, TODAY
 from core.pipeline import run_pipeline
 from core.gmail_client import save_gmail_drafts
-from core.sheets import find_lead, get_leads_for_redraft, update_lead_status_in_sheets
+from core.sheets import find_lead, get_leads_for_redraft, mark_drafts_created, update_lead_status_in_sheets
 from core.telegram import tg_send
 
 log = logging.getLogger(__name__)
@@ -302,8 +302,10 @@ def handle_redraft(chat_id: str) -> None:
             "_Všechny nové leady s emailem již mají draft, nebo žádné nenalezeny._",
         )
         return
-    tg_send(chat_id, f"📋 Nalezeno *{len(leads)}* leadů. Tvořím Gmail drafty...")
-    count = save_gmail_drafts(leads)
+    tg_send(chat_id, f"📋 Nalezeno *{len(leads)}* leadů bez draftu. Tvořím Gmail drafty...")
+    drafted_emails = save_gmail_drafts(leads)
+    count = len(drafted_emails)
+    mark_drafts_created(drafted_emails)
     tg_send(
         chat_id,
         f"✅ *{count}/{len(leads)}* Gmail draftů vytvořeno.\n\n"

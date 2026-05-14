@@ -8,7 +8,7 @@ import anthropic
 
 from core.claude_client import parse_json_response
 from core.config import API_KEY, CREDS, SHEETS_ID, TODAY
-from core.sheets import deduplicate, get_known_municipalities, save_to_sheets
+from core.sheets import deduplicate, get_known_municipalities, mark_drafts_created, save_to_sheets
 from core.gmail_client import save_gmail_drafts
 from core.xlsx import save_to_xlsx
 from core.telegram import tg_send, tg_typing
@@ -210,9 +210,11 @@ def run_pipeline(chat_id: str, role: str, region: str, count: int) -> None:
             )
             return
 
-        saved_sheets = save_to_sheets(all_new_leads)
-        xlsx_path    = save_to_xlsx(all_new_leads)
-        draft_count  = save_gmail_drafts(all_new_leads)
+        saved_sheets   = save_to_sheets(all_new_leads)
+        xlsx_path      = save_to_xlsx(all_new_leads)
+        drafted_emails = save_gmail_drafts(all_new_leads)
+        draft_count    = len(drafted_emails)
+        mark_drafts_created(drafted_emails)
 
         n         = len(all_new_leads)
         today_fmt = datetime.now().strftime("%-d. %-m. %Y · %H:%M")
