@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 SHEET_HEADERS = [
     "Date Found", "Municipality", "Region", "Contact Name", "Role / Title",
     "Email", "Phone", "Source URL", "Language", "Email Draft", "Status",
-    "CEO Notes", "Score", "Priority Tier",
+    "CEO Notes", "Score", "Priority Tier", "Draft Created",
 ]
 
 _SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -97,6 +97,7 @@ def save_to_sheets(leads: list[dict]) -> int:
                 "New", "",
                 str(lead.get("_score", "")),
                 lead.get("_tier", ""),
+                "",  # Draft Created — filled by mark_drafts_created() after Gmail draft is saved
             ]
             ws.append_row(row, value_input_option="USER_ENTERED", table_range="A1")
             saved += 1
@@ -116,9 +117,10 @@ def get_leads_for_redraft() -> list[dict]:
         rows = ws.get_all_records()
         leads = []
         for row in rows:
-            email  = (row.get("Email") or "").strip()
-            status = (row.get("Status") or "").strip()
-            if email and "@" in email and status == "New":
+            email         = (row.get("Email") or "").strip()
+            status        = (row.get("Status") or "").strip()
+            draft_created = (row.get("Draft Created") or "").strip()
+            if email and "@" in email and status == "New" and not draft_created:
                 muni = row.get("Municipality", "")
                 leads.append({
                     "municipality":  muni,
@@ -128,11 +130,27 @@ def get_leads_for_redraft() -> list[dict]:
                     "_draft":        row.get("Email Draft", ""),
                     "_subject":      f"Energetické úspory pro {muni} — SolarObec s.r.o.",
                 })
-        log.info(f"Redraft: {len(leads)} eligible leads")
+        log.info(f"Redraft: {len(leads)} eligible leads (never drafted)")
         return leads
     except Exception as e:
         log.error(f"get_leads_for_redraft error: {e}")
         return []
+
+
+def mark_drafts_created(emails: list[str]) -> None:
+    """Set 'Draft Created' = 'Yes' (col 15) for each successfully drafted email."""
+    if not _sheets_available() or not emails:
+        return
+    try:
+        ws        = _get_worksheet()
+        rows      = ws.get_all_records()
+        email_set = {e.lower() for e in emails}
+        for i, row in enumerate(rows, start=2):
+            if (row.get("Email") or "").lower() in email_set:
+                ws.update_cell(i, 15, "Yes")
+        log.info(f"Marked {len(emails)} leads as Draft Created")
+    except Exception as e:
+        log.error(f"mark_drafts_created error: {e}")
 
 
 def find_lead(query: str) -> list[dict]:
