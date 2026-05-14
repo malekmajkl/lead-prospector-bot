@@ -18,8 +18,8 @@ Telegram bot that researches B2B leads in Czech municipalities, scores them, dra
 **1. Clone and install dependencies**
 
 ```bash
-git clone https://github.com/malekmajkl/CEO_project.git
-cd CEO_project
+git clone https://github.com/malekmajkl/lead-prospector-bot.git
+cd lead-prospector-bot
 pip3 install -r requirements.txt
 ```
 
