@@ -41,8 +41,8 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",  # read for dedup check
 ]
 
-CREDENTIALS_FILE = "gmail_token.json"   # stažený z Google Cloud Console
-TOKEN_FILE       = "gmail_token.json"   # výstup tohoto skriptu
+CREDENTIALS_FILE = "credentials.json"   # stažený z Google Cloud Console (OAuth client secret)
+TOKEN_FILE       = "gmail_token.json"   # výstup tohoto skriptu (refresh token)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -66,23 +66,23 @@ def main():
         sys.exit(1)
 
     # 2. Check if token already exists and is valid
-    # creds = None
-    # if os.path.exists(TOKEN_FILE):
-    #     creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    creds = None
+    if os.path.exists(TOKEN_FILE):
+        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
-    # if creds and creds.valid:
-    #     print(f"✅ Token již existuje a je platný: {TOKEN_FILE}")
-    #     _verify_token(creds)
-    #     return
+    if creds and creds.valid:
+        print(f"✅ Token již existuje a je platný: {TOKEN_FILE}")
+        _verify_token(creds)
+        return
 
-    # # 3. Refresh if expired
-    # if creds and creds.expired and creds.refresh_token:
-    #     print("🔄 Token vypršel — obnovuji...")
-    #     creds.refresh(Request())
-    #     _save_token(creds)
-    #     print("✅ Token obnoven.")
-    #     _verify_token(creds)
-    #     return
+    # 3. Refresh if expired
+    if creds and creds.expired and creds.refresh_token:
+        print("🔄 Token vypršel — obnovuji...")
+        creds.refresh(Request())
+        _save_token(creds)
+        print("✅ Token obnoven.")
+        _verify_token(creds)
+        return
 
     # 4. Full OAuth flow — opens browser
     print("🌐 Otevírám prohlížeč pro přihlášení ke Google...\n")

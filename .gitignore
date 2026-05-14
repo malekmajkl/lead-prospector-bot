@@ -2,6 +2,7 @@
 .env
 gmail_token.json
 service_account.json
+credentials.json
 
 # Generated output
 output/
@@ -25,3 +26,4 @@ venv/
 # IDE
 .vscode/
 .idea/
+.claude/
