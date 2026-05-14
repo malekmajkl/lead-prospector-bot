@@ -107,6 +107,34 @@ def save_to_sheets(leads: list[dict]) -> int:
         return 0
 
 
+def get_leads_for_redraft() -> list[dict]:
+    """Return New leads with an email — used by /redraft to backfill missing Gmail drafts."""
+    if not _sheets_available():
+        return []
+    try:
+        ws   = _get_worksheet()
+        rows = ws.get_all_records()
+        leads = []
+        for row in rows:
+            email  = (row.get("Email") or "").strip()
+            status = (row.get("Status") or "").strip()
+            if email and "@" in email and status == "New":
+                muni = row.get("Municipality", "")
+                leads.append({
+                    "municipality":  muni,
+                    "contact_name":  row.get("Contact Name", ""),
+                    "role":          row.get("Role / Title", ""),
+                    "email":         email,
+                    "_draft":        row.get("Email Draft", ""),
+                    "_subject":      f"Energetické úspory pro {muni} — SolarObec s.r.o.",
+                })
+        log.info(f"Redraft: {len(leads)} eligible leads")
+        return leads
+    except Exception as e:
+        log.error(f"get_leads_for_redraft error: {e}")
+        return []
+
+
 def find_lead(query: str) -> list[dict]:
     if not _sheets_available():
         return []
