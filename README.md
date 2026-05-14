@@ -1,4 +1,4 @@
-# CEO Assistant
+# Lead-prospector-bot
 
 Telegram bot that researches B2B leads in Czech municipalities, scores them, drafts personalised emails, and syncs status with Google Sheets and Gmail.
 
