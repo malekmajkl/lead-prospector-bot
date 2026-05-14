@@ -213,7 +213,17 @@ def run_pipeline(chat_id: str, role: str, region: str, count: int) -> None:
         saved_sheets   = save_to_sheets(all_new_leads)
         xlsx_path      = save_to_xlsx(all_new_leads)
         drafted_emails = save_gmail_drafts(all_new_leads)
-        draft_count    = len(drafted_emails)
+
+        if drafted_emails is None:
+            tg_send(
+                chat_id,
+                "⚠️ *Gmail token je neplatný — drafty nebyly vytvořeny.*\n\n"
+                "Spusťte na serveru:\n`python3 setup_gmail_auth.py`\n\n"
+                "Poté použijte `/redraft` pro vytvoření draftů.",
+            )
+            drafted_emails = []
+
+        draft_count = len(drafted_emails)
         mark_drafts_created(drafted_emails)
 
         n         = len(all_new_leads)
