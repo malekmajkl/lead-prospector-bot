@@ -67,6 +67,7 @@ python3 run_local.py
 | `/replied [obec/příjmení]` | Mark lead as Replied |
 | `/reviewed [obec/příjmení]` | Mark lead as Reviewed |
 | `/closed [obec/příjmení]` | Mark lead as Closed |
+| `/new [obec/příjmení]` | Reset lead status back to New |
 | `/help` | Show all commands |
 
 ---
