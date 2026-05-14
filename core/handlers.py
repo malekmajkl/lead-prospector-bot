@@ -304,6 +304,16 @@ def handle_redraft(chat_id: str) -> None:
         return
     tg_send(chat_id, f"📋 Nalezeno *{len(leads)}* leadů bez draftu. Tvořím Gmail drafty...")
     drafted_emails = save_gmail_drafts(leads)
+
+    if drafted_emails is None:
+        tg_send(
+            chat_id,
+            "⚠️ *Gmail token je neplatný — drafty nebyly vytvořeny.*\n\n"
+            "Spusťte na serveru:\n`python3 setup_gmail_auth.py`\n\n"
+            "Poté zkuste `/redraft` znovu.",
+        )
+        return
+
     count = len(drafted_emails)
     mark_drafts_created(drafted_emails)
     tg_send(
