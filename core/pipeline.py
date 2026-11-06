@@ -4,10 +4,8 @@ import logging
 import time
 from datetime import datetime
 
-import anthropic
-
-from core.claude_client import parse_json_response
-from core.config import API_KEY, CREDS, SHEETS_ID, TODAY
+from core.claude_client import call_llm, parse_json_response
+from core.config import API_KEY, CREDS, LLM_PROVIDER, SHEETS_ID, TODAY
 from core.sheets import deduplicate, get_known_municipalities, mark_drafts_created, save_to_sheets
 from core.gmail_client import save_gmail_drafts
 from core.xlsx import save_to_xlsx
@@ -109,6 +107,14 @@ def draft_email(lead: dict) -> tuple[str, str]:
 
 def research_leads(role: str, region: str, count: int,
                    exclude_municipalities: list[str] | None = None) -> list[dict]:
+    if LLM_PROVIDER == "local":
+        return _research_leads_local(role, region, count, exclude_municipalities)
+    return _research_leads_anthropic(role, region, count, exclude_municipalities)
+
+
+def _research_leads_anthropic(role: str, region: str, count: int,
+                               exclude_municipalities: list[str] | None = None) -> list[dict]:
+    import anthropic
     client = anthropic.Anthropic(api_key=API_KEY)
     exclude_note = ""
     if exclude_municipalities:
@@ -138,6 +144,32 @@ def research_leads(role: str, region: str, count: int,
     result = parse_json_response(raw)
     if isinstance(result, list):
         log.info(f"Research: {len(result)} leads found")
+        return result[:count]
+    return []
+
+
+def _research_leads_local(role: str, region: str, count: int,
+                           exclude_municipalities: list[str] | None = None) -> list[dict]:
+    from core.web_search_client import web_search
+
+    queries = [
+        f"{role} {region} ČR email kontakt obec",
+        f"{region} municipality {role} official contacts site:.cz",
+    ]
+    search_context = "\n\n---\n\n".join(web_search(q, num_results=10) for q in queries)
+
+    exclude_note = ""
+    if exclude_municipalities:
+        exclude_note = f" Vynech tyto obce (již v databázi): {', '.join(exclude_municipalities)}."
+
+    user_msg = (
+        f"Ze záložek níže extrahuj {count} kontaktů s rolí '{role}' v oblasti '{region}'."
+        f"{exclude_note} Vrať POUZE JSON array s {count} záznamy.\n\n{search_context}"
+    )
+    raw = call_llm(RESEARCH_SYSTEM, user_msg, max_tokens=2000)
+    result = parse_json_response(raw)
+    if isinstance(result, list):
+        log.info(f"Research (local): {len(result)} leads found")
         return result[:count]
     return []
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import anthropic
 
-from core.config import API_KEY, SKILLS_DIR
+from core.config import API_KEY, SKILLS_DIR, LLM_PROVIDER, LOCAL_LLM_BASE_URL, LOCAL_LLM_MODEL
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +50,34 @@ def call_claude(system: str, user_message: str,
             log.exception(f"Claude API error: {e}")
             raise
     log.error("Rate limit — all retries exhausted")
+    return ""
+
+
+def call_llm(system: str, user_message: str,
+             tools: list | None = None, max_tokens: int = 2000) -> str:
+    if LLM_PROVIDER == "local":
+        return _call_ollama(system, user_message, max_tokens)
+    return call_claude(system, user_message, tools=tools, max_tokens=max_tokens)
+
+
+def _call_ollama(system: str, user_message: str, max_tokens: int = 2000) -> str:
+    import openai
+    client = openai.OpenAI(base_url=LOCAL_LLM_BASE_URL, api_key="ollama")
+    for attempt in range(3):
+        try:
+            resp = client.chat.completions.create(
+                model=LOCAL_LLM_MODEL,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user",   "content": user_message},
+                ],
+            )
+            return resp.choices[0].message.content.strip()
+        except Exception as e:
+            log.warning(f"Ollama attempt {attempt + 1}/3 failed: {e}")
+            if attempt == 2:
+                raise
     return ""
 
 

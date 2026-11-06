@@ -44,15 +44,22 @@ BASE_URL   = f"https://api.telegram.org/bot{TOKEN}"
 TODAY      = date.today().isoformat()
 OUTPUT_DIR = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
-SKILLS_DIR = Path(os.getenv("SKILLS_DIR", str(Path(__file__).parent.parent / "skills")))
+SKILLS_DIR         = Path(os.getenv("SKILLS_DIR", str(Path(__file__).parent.parent / "skills")))
+LLM_PROVIDER       = os.getenv("LLM_PROVIDER", "anthropic")
+LOCAL_LLM_BASE_URL = os.getenv("LOCAL_LLM_BASE_URL", "http://localhost:11434/v1")
+LOCAL_LLM_MODEL    = os.getenv("LOCAL_LLM_MODEL", "llama3")
+SEARCH_PROVIDER    = os.getenv("SEARCH_PROVIDER", "duckduckgo")
+SERPAPI_KEY        = os.getenv("SERPAPI_KEY", "")
 
 
 def validate_config() -> None:
     errors = []
     if not TOKEN:
         errors.append("❌ TELEGRAM_TOKEN chybí v .env")
-    if not API_KEY:
+    if LLM_PROVIDER == "anthropic" and not API_KEY:
         errors.append("❌ ANTHROPIC_API_KEY chybí v .env")
+    if LLM_PROVIDER == "local" and SEARCH_PROVIDER == "serpapi" and not SERPAPI_KEY:
+        errors.append("❌ SERPAPI_KEY chybí v .env (vyžadováno pro SEARCH_PROVIDER=serpapi)")
     if errors:
         for e in errors:
             print(e)

@@ -16,11 +16,11 @@ fi
 mkdir -p logs output
 
 echo "📦 Instaluji závislosti..."
-pip3 install -r requirements.txt -q
+pip3.11 install -r requirements.txt -q
 
 echo ""
 echo "🤖 Spouštím CEO Assistant Bot..."
 echo "   Napište /hledej v Telegramu | Zastavení: Ctrl+C"
 echo ""
 
-python3 run_local.py
+python3.11 run_local.py
